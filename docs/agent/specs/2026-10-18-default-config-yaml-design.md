@@ -158,8 +158,8 @@ as they are.
    - `config_file` exists: use it, log nothing.
    - Else `legacy_config_file` exists: copy it to `config_file`, log that the legacy config was migrated.
    - Else `seed_config_file` exists: copy it to `config_file`, log that the default config was seeded.
-   The copy preserves the source file's mode; ownership follows the container user that runs `start.sh`.
    - Else: log `[crit]` and exit non-zero.
+   The copy preserves the source file's mode; ownership follows the container user that runs `start.sh`.
    Never overwrite an existing `config_file`. If a legacy file coexists with the new one, log that the
    legacy file is ignored.
 4. Exec: `--config "${config_file}"`, with `${ADDITIONAL_PARAMETERS}` unchanged.
@@ -194,7 +194,7 @@ Temp scripts live in `/tmp`, never in the repo.
 | Full option coverage | extract leaf key paths from `config.generated.yaml` at `v2.0.1-stable`, search the raw file text for each | zero missing keys |
 | No live secrets | grep for uncommented `adminPassword`, `auth.key`, `totpSecret`, `clientSecret`, `userPassword`, `secret` | no hits |
 | Shell lint | `shellcheck run/nobody/start.sh` | clean |
-| Markdown lint | `markdownlint --fix` on this spec | clean |
+| Markdown lint | `markdownlint --fix` on this spec | no non-table line above the project's 120-character limit; default-80 MD013 warnings accepted |
 | Seed behaviour | with Docker available: build, run against an empty `/config`, assert the file appears and matches the seed; edit it, restart, assert no overwrite; pre-place a legacy config, assert the migration branch | all branches behave as in the matrix |
 | Existing-install safety | diff old and new `start.sh` | only config path handling differs; env exports untouched |
 
