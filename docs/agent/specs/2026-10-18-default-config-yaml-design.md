@@ -26,12 +26,13 @@ while this image mounts files at `/media`.
 ## Non-goals
 
 - No change to `install.sh`, the Unraid template XML, `.gitignore`, or git initialisation.
-- No README rewrite. The README documents `ENABLE_TLS`, `ENABLE_AUTHENTICATION`, `FILEBROWSER_ROOT` and
-  healthcheck variables that `start.sh` does not implement, and states default credentials of
-  `admin/filebrowser` where v2.0.1 defaults to `admin/admin`. Both are known inaccuracies, recorded here
-  and left untouched.
+- ~~No README rewrite.~~ Superseded during review: the README was rewritten to match the code, because it
+  documented `ENABLE_TLS`, `ENABLE_AUTHENTICATION`, `FILEBROWSER_ROOT` and `FILEBROWSER_BASEURL`, none of which
+  the scripts consume, and stated default credentials of `admin/filebrowser` where the installed release defaults
+  to `admin/admin`. See "Post-review amendments" below.
 - No runtime config-generation logic, templating, or environment-variable substitution.
-- No change to how secrets are supplied; environment variables keep working exactly as today.
+- No change to how secrets are supplied; environment variables keep working as today, except that an empty value is
+  now treated as unset (see "Post-review amendments").
 
 ## Decisions
 
@@ -117,8 +118,8 @@ recreation.
 ### Commented surface
 
 Every leaf key in the v2.0.1 reference is present, verified mechanically (see Verification). That includes
-`server.sources[].config.rules[]` with all 13 rule keys, `server.indexSqlConfig`, `server.database.activity`,
-the full `auth.methods.{proxy,oidc,ldap,jwt,passkey}` trees plus `auth.noauth`, all eight `userDefaults`
+`server.sources[].config.rules[]` with all 14 rule keys, `server.indexSqlConfig`, `server.database.activity`,
+the full `auth.methods.{proxy,oidc,ldap,jwt,passkey}` trees plus `auth.methods.noauth`, all eight `userDefaults`
 sub-groups, `integrations.office`, and both `integrations.media.convert` format matrices.
 
 Keys keep a short trailing comment in the upstream style so behaviour is discoverable without opening the
@@ -159,7 +160,7 @@ as they are.
    - Else `legacy_config_file` exists: copy it to `config_file`, log that the legacy config was migrated.
    - Else `seed_config_file` exists: copy it to `config_file`, log that the default config was seeded.
    - Else: log `[crit]` and exit non-zero.
-   The copy preserves the source file's mode; ownership follows the container user that runs `start.sh`.
+   The copy preserves the source file's mode for a migrated legacy config; the seeded config is forced to 0644.
    Never overwrite an existing `config_file`. If a legacy file coexists with the new one, log that the
    legacy file is ignored.
 4. Exec: `--config "${config_file}"`, with `${ADDITIONAL_PARAMETERS}` unchanged.
@@ -222,3 +223,23 @@ passing.
 Revert the `Dockerfile` line and the `start.sh` blocks; restore the previous `config/config.yaml`. A
 container started with the new file keeps working with the old script because the legacy migration branch
 copies rather than moves, so both paths remain populated.
+
+## Post-review amendments
+
+The dual-model review loop changed the design in these ways after the initial approval:
+
+- **Atomic seeding.** The seed/migration copy writes to a `mktemp` file next to the config, sets its permissions,
+  then `mv`s it into place. An interrupted copy can no longer be adopted as the operator's config. A startup sweep
+  removes leftover `*.tmp.*` files older than five minutes.
+- **Empty environment variables treated as unset.** Every `FILEBROWSER_*` variable is exported only when non-empty,
+  because an inherited empty value overrides the matching config key. The README and config header state this.
+- **Upgrade warning for the database path.** The seeded `server.database.path` takes precedence over
+  `FILEBROWSER_DATABASE_PATH`. When the container seeds a config while that variable is set, it now logs a warning
+  telling the operator to point `server.database.path` at the existing file or delete the key, so an upgrade cannot
+  silently start on an empty database.
+- **Permissions.** The seed is installed as `0644`; a migrated legacy config keeps its own mode with owner
+  read/write guaranteed.
+- **README rewritten** to match the scripts (see superseded non-goal above).
+- **Seed target confirmed.** GitHub's `releases/latest` and the installed binary both report `v2.0.1-stable`, so the
+  v2.0.1 surface remains the correct target. The header warns that upstream adds *and removes* options between
+  releases, and that uncommenting a removed key stops the server.

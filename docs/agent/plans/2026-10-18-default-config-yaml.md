@@ -15,6 +15,15 @@ Docker (binhex arch-base image), Python 3 + PyYAML for verification scripts kept
 
 ---
 
+## Superseded by review amendments
+
+This plan was written before the dual-model review loop ran. Task 4's `start.sh` content and Task 2's seed
+block are the pre-review versions: the implemented files now use a `mktemp` + `mv` atomic copy, a uniform
+non-empty env-var loop, an age-gated startup sweep, a database-path upgrade warning, and 0644 seed permissions.
+Do NOT re-run Tasks 2 and 4 verbatim - take the current file contents from the repository and see the spec's
+"Post-review amendments" section (`docs/agent/specs/2026-10-18-default-config-yaml-design.md`). The README is
+no longer out of scope; it was rewritten in the review pass.
+
 ## Scope check
 
 The spec (`docs/agent/specs/2026-10-18-default-config-yaml-design.md`) covers a single subsystem:

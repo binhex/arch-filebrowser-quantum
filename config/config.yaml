@@ -1,0 +1,436 @@
+# =============================================================================
+# FileBrowser Quantum - reference configuration for this container image
+# =============================================================================
+#
+# ONLY the basic settings are active. Everything else is commented out -
+# uncomment what you need and restart the container.
+#
+# Setting names are validated at startup: an unknown or misspelled key inside a
+# known section stops the server, so keep names exactly as written here. A
+# misspelled section name is silently ignored instead, so check the whole name.
+#
+# Written against upstream v2.0.1-stable, the release this image installs at the
+# time of writing. build/root/install.sh pulls whatever the latest release is at
+# image build time, so re-check this file against the generated reference below
+# after each build.
+#
+# Options are added AND removed between upstream releases. Uncommenting a key the
+# installed release no longer knows about stops the server at startup, so compare
+# the version it ships ('filebrowser version') with the reference tag below before
+# uncommenting anything you are unsure about.
+#
+#   reference  https://github.com/gtsteffaniak/filebrowser/blob/v2.0.1-stable/frontend/public/config.generated.yaml
+#   docs       https://filebrowserquantum.com/en/docs/configuration/
+#
+# Secrets appear commented, most with a FILEBROWSER_* environment variable that
+# this image passes through. Prefer the environment variable, since a secret
+# written here is stored in plain text on disk. The admin password is assigned
+# again whenever it is supplied, so remove the variable once you have changed
+# the password in the UI.
+#
+# Every FILEBROWSER_* variable is passed to the server only when it holds a
+# non-empty value, so an empty or unset variable leaves the matching config key
+# below in charge.
+#
+# After upgrading to a new upstream release, re-check this file against the
+# generated reference for the release now installed - same URL as above with the
+# new tag - because option names and locations do change between minor versions.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Server - sources, caching, database, indexing, previews, logging
+# docs  /docs/configuration/server/  and  /docs/configuration/logging/
+# -----------------------------------------------------------------------------
+server:
+  # minimum length of a search query before searching starts
+  # minSearchLength: 3
+
+  # disable the backend update check service
+  # disableUpdateCheck: false
+
+  # concurrent image processing jobs used to build previews
+  # numImageProcessors: 4
+
+  # disable all previews and thumbnails, simple icons are used instead
+  # disablePreviews: false
+
+  # disable preview resizing, faster over slow connections
+  # disablePreviewResize: false
+
+  # disable type detection by file header, useful on slow filesystems
+  # disableTypeDetectionByHeader: false
+
+  # logging - a list, one entry per output destination
+  # docs  /docs/configuration/logging/
+  # logging:
+  #   - levels: "info|warning|error"       # levels to log, or "disabled"
+  #     apiLevels: ""                      # levels for API routes, or "disabled"
+  #     output: "stdout"                   # "stdout" or a file path
+  #     noColors: false                    # disable coloured output, use for files
+  #     json: false                        # emit JSON formatted lines
+  #     utc: false                         # log in UTC instead of local time
+  #     apiFilter: ""                      # regex of API paths to omit from logs
+
+  # file system sources - at least one is required
+  # docs  /docs/configuration/sources/
+  sources:
+    - path: "/media"                  # the files bind mount
+      name: "Media"                   # display name in the UI
+      config:
+        defaultEnabled: true          # grant this source to all users
+
+        # per-source options for the source above - uncomment as needed
+        # denyByDefault: false              # deny access unless an allow rule exists
+        # private: false                    # no sharing permitted for this source
+        # readOnly: false                   # disable changes from UI, WebDAV and API
+        # disabled: false                   # keep the source defined but switched off
+        # defaultUserScope: "/"             # default access path inside the source
+        # createUserDir: false              # create defaultUserScope/<username> per user
+        # useLogicalSize: false             # size from file contents, not disk usage
+        # defaultPermissions:               # template permissions for new user scopes
+        #   view: false
+        #   download: false
+        #   modify: false
+        #   delete: false
+        #   create: false
+        #   configured: false               # true when explicitly set, allows deny-all
+        # rules:                            # per-path indexing and visibility rules
+        #   - neverWatchPath: ""            # index once in the first pass, never re-index
+        #     includeRootItem: ""           # only include these items at root level
+        #     fileStartsWith: ""            # exclude files by prefix
+        #     folderStartsWith: ""          # exclude folders by prefix
+        #     fileEndsWith: ""              # exclude files by suffix
+        #     folderEndsWith: ""            # exclude folders by suffix
+        #     folderPath: ""                # exclude this folder path
+        #     filePath: ""                  # exclude this file path
+        #     fileName: ""                  # exclude files by name
+        #     folderName: ""                # exclude folders by name
+        #     viewable: false               # visible in the UI but not indexed
+        #     ignoreHidden: false           # exclude hidden files and folders
+        #     ignoreZeroSizeFolders: false  # exclude folders with 0 size
+        #     ignoreSymlinks: false         # exclude symbolic links
+
+  # additional sources - add further list items here, do not add a second
+  # "sources:" key (duplicate keys are rejected at startup)
+  #   - path: "/media/downloads"
+  #     name: "Downloads"
+  #     config:
+  #       defaultEnabled: false
+
+  # cache for previews, the search index (cacheDir/sql) and archive temporary files
+  cacheDir: "/config/filebrowser/cache"
+
+  # automatically clean the cache directory - docker must mount a persistent
+  # volume for the cache to survive container recreation
+  # cacheDirCleanup: false
+
+  # maximum archive/unarchive size in GB, 0 means no limit
+  # maxArchiveSize: 20
+
+  # permissions applied to files and directories created through the UI
+  # filesystem:
+  #   createFilePermission: "644"       # 644, 755, 2755
+  #   createDirectoryPermission: "755"  # 755, 2755, 1777
+
+  # index database tuning - raise batchSize and cacheSizeMB for very large trees
+  # indexSqlConfig:
+  #   batchSize: 1000                   # items per transaction, typically 500-5000
+  #   cacheSizeMB: 32                   # SQLite cache size in MB
+  #   walMode: false                    # WAL journaling, better for busy deployments
+  #   disableReuse: false               # true always creates a new index on startup
+  #   startupIntegrityCheck: "quickCheck"  # quickCheck | probe | off
+
+  # sqlite database holding users, shares and activity
+  database:
+    path: "/config/filebrowser/database.sqlite"
+    # migrateFrom: ""                 # one-time v1 to v2 migration source file
+    # activity:                       # semantic activity audit logging
+    #   disabled: false
+    #   retentionDays: 30             # purge activity rows older than this
+    #   flushIntervalSeconds: 10      # buffered write interval
+    #   maxBufferSize: 10000          # flush early once the buffer reaches this size
+  # NOTE - the active path above takes precedence over FILEBROWSER_DATABASE_PATH.
+  # Upgrading from an install that used that variable for a different location?
+  # Point this key at the existing database file, or delete the key, otherwise
+  # the server starts on a new empty database and your users and shares appear
+  # to be missing.
+  # env FILEBROWSER_DISABLE_AUTOMATIC_BACKUP disables automatic database backups
+
+# -----------------------------------------------------------------------------
+# Authentication - password, proxy, OIDC, LDAP, JWT and passkey
+# docs  /docs/configuration/authentication/
+# -----------------------------------------------------------------------------
+auth:
+  # hours a web UI session token stays valid
+  # tokenExpirationHours: 2
+
+  methods:
+    # password login
+    password:
+      enabled: true
+      minLength: 8                    # minimum password length
+      # signup: false                 # allow self signup from the login page
+      # enforcedOtp: false            # force TOTP for all password users
+      # recaptcha:                    # login page captcha, used with signup
+      #   host: "https://www.google.com/recaptcha/api.js"
+      #   key: ""                     # recaptcha v2 site key
+      #   secret: ""                  # prefer FILEBROWSER_RECAPTCHA_SECRET
+
+    # reverse proxy header authentication - the header value is trusted as the
+    # username, only enable behind a proxy you control
+    # proxy:
+    #   enabled: false
+    #   header: ""                    # header carrying the username
+    #   adminGroup: ""                # users in this group become admins
+    #   userGroups: ["group-a"]       # list of groups allowed to log in
+    #   groupsClaim: ""               # JSON field to read groups from
+    #   userIdentifier: ""            # field used as the username
+    #   disableVerifyTLS: false       # insecure, testing only
+    #   logoutRedirectUrl: ""         # provider logout url to redirect to
+
+    # disable all authentication - overrides every other method, unsafe
+    # noauth: false
+
+    # OpenID Connect
+    # oidc:
+    #   enabled: false
+    #   clientId: ""                  # prefer FILEBROWSER_OIDC_CLIENT_ID
+    #   clientSecret: ""              # prefer FILEBROWSER_OIDC_CLIENT_SECRET
+    #   issuerUrl: ""                 # authorization url of the provider
+    #   scopes: "openid email profile"
+    #   userIdentifier: "preferred_username"
+    #   adminGroup: ""                # users in this group become admins
+    #   userGroups: ["group-a"]       # list of groups allowed to log in
+    #   groupsClaim: "groups"
+    #   disableVerifyTLS: false       # insecure, testing only
+    #   logoutRedirectUrl: ""
+
+    # LDAP
+    # ldap:
+    #   enabled: false
+    #   server: ""                    # ldap://host:389
+    #   baseDN: ""                    # e.g. dc=example,dc=com
+    #   userDN: ""                    # bind DN of the service account
+    #   userPassword: ""              # prefer FILEBROWSER_LDAP_USER_PASSWORD
+    #   userFilter: ""                # defaults to (&(cn=%s)(objectClass=user))
+    #   adminGroup: ""                # users in this group become admins
+    #   userGroups: ["group-a"]       # list of groups allowed to log in
+    #   groupsClaim: ""               # JSON field to read groups from
+    #   userIdentifier: ""            # field used as the username
+    #   disableVerifyTLS: false       # insecure, testing only
+    #   logoutRedirectUrl: ""
+
+    # JWT bearer authentication
+    # jwt:
+    #   enabled: false
+    #   header: "X-JWT-Assertion"     # header carrying the token
+    #   secret: ""                    # public key, certificate or shared secret,
+    #                                 #   no environment variable equivalent
+    #   algorithm: "HS256"            # HS256, HS384, HS512, RS256, ES256
+    #   adminGroup: ""                # users in this group become admins
+    #   userGroups: ["group-a"]       # list of groups allowed to log in
+    #   groupsClaim: ""               # JSON field to read groups from
+    #   userIdentifier: ""            # field used as the username
+    #   disableVerifyTLS: false       # insecure, testing only
+    #   logoutRedirectUrl: ""
+
+    # passkey multi-factor authentication
+    # passkey:
+    #   enabled: false
+    #   rpDisplayName: ""             # defaults to the frontend name
+    #   rpId: ""                      # defaults to the base URL host
+    #   rpOrigins: ["https://files.example.com"]  # defaults to the base URL
+    #   loginButtonText: ""           # custom login button label
+
+  # admin account created on first start
+  # adminUsername: "admin"            # no environment variable equivalent
+  # adminPassword: "admin"            # prefer FILEBROWSER_ADMIN_PASSWORD; remove it
+  #                                   #   once you change the password in the UI
+
+  # HMAC key for JWT tokens - generated into the database when unset
+  # key: ""                           # prefer FILEBROWSER_JWT_TOKEN_SECRET
+
+  # secret used to encrypt TOTP secrets
+  # totpSecret: ""                    # prefer FILEBROWSER_TOTP_SECRET
+
+# -----------------------------------------------------------------------------
+# Frontend - branding, default links, navigation, styling
+# docs  /docs/configuration/frontend/
+# -----------------------------------------------------------------------------
+frontend:
+  # display name, also used as the PWA install name (capped at 30 characters)
+  # name: "FileBrowser Quantum"
+
+  # disable the default links in the sidebar
+  # disableDefaultLinks: false
+
+  # disable the used-percentage indicator for sources in the sidebar
+  # disableUsedPercentage: false
+
+  # disable the sidebar navigation buttons
+  # disableNavButtons: false
+
+  # path to a favicon
+  # favicon: ""
+
+  # html head meta description
+  # description: "FileBrowser Quantum is a file manager for the web"
+
+  # path to an image used as the login page icon
+  # loginIcon: ""
+
+  # login button labels
+  # loginButtonText: ""
+  # oidcLoginButtonText: ""
+
+  # hide the PWA install button in the sidebar
+  # disablePWAInstall: false
+
+  # extra links shown in the sidebar
+  # externalLinks:
+  #   - text: "Project home"          # link text
+  #     title: "Project home page"    # tooltip
+  #     url: "https://example.com/"
+  #   - text: "Help"
+  #     title: "Documentation"
+  #     url: "https://filebrowserquantum.com/en/docs/"
+
+  # styling and custom themes
+  # styling:
+  #   disableEventThemes: false       # disable the event based themes
+  #   customCSS: ""                   # css file applied for all users
+  #   lightBackground: "#f5f5f5"      # any valid CSS colour
+  #   darkBackground: "#141D24"       # any valid CSS colour
+  #   customThemes:                   # selectable per user, "default" is the default
+  #     alternative:
+  #       description: "Reduce rounded corners"
+  #       css: "reduce-rounded-corners.css"
+  #     default:
+  #       description: "The default theme"
+  #       css: ""
+
+# -----------------------------------------------------------------------------
+# User defaults - initial values seeded for new users on first start
+# docs  /docs/configuration/users/  (values become database-authoritative
+# after first start; remove this block once the defaults are set in the UI)
+# -----------------------------------------------------------------------------
+# userDefaults:
+#   sidebar:
+#     disableQuickToggles: false      # hide the quick toggles
+#     hideFileActions: false          # hide file actions
+#     disableHideOnPreview: false     # keep the sidebar open while previewing
+#     sticky: true                    # keep the sidebar open when navigating
+#     hideFiles: false                # show directories only in the tree
+#     showTools: true                 # show sidebar links of category "tool"
+#   listing:
+#     deleteWithoutConfirming: false  # delete without a confirmation prompt
+#     dateFormat: false               # true shows exact timestamps, false relative
+#     showHidden: false               # show hidden files
+#     quickDownload: false            # one-click download icon
+#     showSelectMultiple: false       # multi-select on desktop
+#     singleClick: false              # open folders on single click
+#     hideFileExt: ""                 # space separated extensions to hide
+#     showCopyPath: false             # copy path in the context menu
+#     deleteAfterArchive: true        # delete sources after archiving
+#     viewMode: "normal"              # normal, list, grid or compact
+#     gallerySize: 3                  # 0-9 gallery thumbnail size
+#   preview:
+#     image: true                     # thumbnails for images
+#     video: true                     # thumbnails for videos
+#     audio: true                     # thumbnails for audio
+#     motionVideoPreview: true        # several frames when hovering a video
+#     office: true                    # thumbnails for office documents
+#     popup: true                     # larger popup preview on hover
+#     disablePreviewExt: ""           # comma separated extensions to skip
+#     highQuality: true               # high quality thumbnails
+#     folder: true                    # folder previews
+#     models: true                    # live 3D model thumbnails
+#   fileViewer:
+#     editorQuickSave: false          # quick save button in the editor
+#     autoplayMedia: true             # autoplay media in the preview
+#     disableViewingExt: ""           # comma separated extensions not viewable
+#     disableOnlyOfficeExt: ".md .txt .pdf .html .xml"
+#     preferEditorForMarkdown: false  # editor instead of the markdown viewer
+#     debugOffice: false              # debug the onlyoffice integration
+#   search:
+#     disableOptions: false           # hide the search options
+#   ui:
+#     darkMode: true                  # start in dark mode
+#     themeColor: "var(--blue)"       # e.g. #ff0000 or var(--red)
+#     customTheme: ""                 # name of a theme from frontend styling
+#     locale: "en"                    # de, en, fr, ...
+#   fileLoading:
+#     maxConcurrentUpload: 10         # parallel uploads
+#     uploadChunkSizeMb: 10           # upload chunk size in MB
+#     clearAll: false                 # clear the queue after completion
+#     downloadChunkSizeMb: 0          # 0 disables chunked downloads
+#   account:
+#     permissions:
+#       api: false                    # allow API access
+#       admin: false                  # allow admin access
+#       share: false                  # allow sharing files
+#       realtime: false               # allow realtime updates
+#     lockPassword: false             # prevent password changes
+#     requirePasswordChange: false    # force a password change at next login
+#     disableSettings: false          # hide the settings page
+#     loginMethod: "password"         # password, proxy or oidc
+#     disableUpdateNotifications: false  # hide the update banner for admins
+
+# -----------------------------------------------------------------------------
+# Integrations - OnlyOffice document server and media processing
+# docs  /docs/configuration/  (integrations section)
+# -----------------------------------------------------------------------------
+integrations:
+  # OnlyOffice document server, needs to be reachable from the browser
+  # office:
+  #   url: "http://onlyoffice-server:8000"
+  #   internalUrl: ""                 # private address for server-to-server calls
+  #   secret: ""                      # prefer FILEBROWSER_ONLYOFFICE_SECRET
+  #   viewOnly: false                 # disable editing
+
+  # media processing, requires ffmpeg and ffprobe
+  # media:
+  #   ffmpegPath: "/usr/local/bin"    # dir with ffmpeg and ffprobe, env FILEBROWSER_FFMPEG_PATH overrides
+  #   debug: false                    # verbose ffmpeg output, very noisy
+  #   extractEmbeddedSubtitles: false # extract subtitles from media files
+  #   hardwareAcceleration: false     # use hardware ffmpeg when available
+  #   convert:                        # which formats are converted for previews
+  #     imagePreview:
+  #       heic: false
+  #       jpeg: true
+  #     videoPreview:
+  #       3g2: true
+  #       3gp: true
+  #       asf: true
+  #       avi: true
+  #       f4v: true
+  #       flv: true
+  #       m2ts: true
+  #       m4v: true
+  #       mkv: true
+  #       mov: true
+  #       mp4: true
+  #       mpeg: true
+  #       mpg: true
+  #       ogv: true
+  #       ts: true
+  #       vob: true
+  #       webm: true
+  #       wmv: true
+
+# -----------------------------------------------------------------------------
+# HTTP - listening socket, TLS, base URL and reverse proxy behaviour
+# docs  /docs/configuration/http/
+# -----------------------------------------------------------------------------
+http:
+  port: 8125                        # webui port published by this template
+  # listen: ""                      # bind address, default 0.0.0.0
+  # baseURL: "/"                    # subpath when served behind a proxy prefix
+  # externalUrl: ""                 # public url used for share links
+  # internalUrl: ""                 # private url used by integrations
+  # socket: ""                      # unix socket instead of a TCP port
+  # tlsCert: ""                     # path to the certificate, set with tlsKey
+  # tlsKey: ""                      # path to the private key
+  # disableWebDAV: false            # remove the /dav route
+  # trustProxyHeaders: false        # honour X-Forwarded-* and X-Real-IP
+  # disableRateLimit: false         # disable auth throttling and lockout
