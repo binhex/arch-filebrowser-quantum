@@ -26,15 +26,26 @@ docker run -d \
         -v <path for config files>:/config \
         -v <path for files>:/media \
         -v /etc/localtime:/etc/localtime:ro \
-        -e PUID=<uid for user> \
-        -e PGID=<gid for user> \
-        -e UMASK=<umask for created files> \
-        -e ADDITIONAL_PARAMETERS=<cli options> \
         -e FILEBROWSER_ADMIN_PASSWORD=<admin password> \
+        -e FILEBROWSER_JWT_TOKEN_SECRET=<jwt token secret> \
+        -e FILEBROWSER_TOTP_SECRET=<totp secret> \
+        -e FILEBROWSER_RECAPTCHA_SECRET=<recaptcha secret> \
+        -e FILEBROWSER_LDAP_USER_PASSWORD=<ldap bind password> \
+        -e FILEBROWSER_OIDC_CLIENT_ID=<oidc client id> \
+        -e FILEBROWSER_OIDC_CLIENT_SECRET=<oidc client secret> \
+        -e FILEBROWSER_ONLYOFFICE_SECRET=<onlyoffice secret> \
+        -e FILEBROWSER_DISABLE_AUTOMATIC_BACKUP=<true|false> \
+        -e FILEBROWSER_CONFIG=/config/filebrowser/config/config.yaml \
+        -e FILEBROWSER_DATABASE_PATH=/config/filebrowser/db/filebrowser.sqlite \
+        -e FILEBROWSER_FFMPEG_PATH=/usr/local/bin \
+        -e ADDITIONAL_PARAMETERS=<cli options> \
         -e ENABLE_HEALTHCHECK=<yes|no> \
         -e HEALTHCHECK_COMMAND=<command> \
         -e HEALTHCHECK_ACTION=<action> \
         -e HEALTHCHECK_HOSTNAME=<hostname> \
+        -e PUID=<uid for user> \
+        -e PGID=<gid for user> \
+        -e UMASK=<umask for created files> \
         ghcr.io/binhex/arch-filebrowser-quantum
 ```
 
@@ -45,59 +56,82 @@ correct values.
 
 `http://<host ip>:8125`
 
-Default username/password: `admin/admin`. Set `FILEBROWSER_ADMIN_PASSWORD` to
-choose your own; a value shorter than 8 characters is rejected when an admin
-account already exists (the previous password is kept), while a fresh install
-accepts the first value. Releases from v2.0.9 onwards generate a random admin
-password and print it in the container log on first start, so check the log if
-`admin/admin` is rejected.
+The default username is `admin`. The seeded config sets no admin password, so
+FileBrowser generates a random password on first start, writes it to
+`/config/filebrowser/logs/filebrowser.log`, and forces a password change at
+first login.
+
+Set `FILEBROWSER_ADMIN_PASSWORD` to choose your own password instead. It is
+re-applied on every start, so remove the variable once you have changed the
+password in the UI. A value shorter than the configured minimum password
+length (8 in the seeded config) is rejected once the admin account exists (the
+previous password is kept), while a fresh install accepts the first value. The
+literal value `admin` is treated as unset, so setting it does not give you
+`admin/admin`.
 
 ## Configuration
 
 On first start the container seeds a commented reference configuration to
-`/config/config.yaml`. Only the basics are active: the webui port, the `/media`
-source, the cache and database locations, and password authentication. Every
-other option is present but commented out - uncomment the ones you need and
-restart the container.
+`FILEBROWSER_CONFIG` (default `/config/filebrowser/config/config.yaml`). Only
+the basics are active: the webui port, the `/media` source, the cache directory,
+logging and password authentication. Every other option is present but commented
+out - uncomment the ones you need and restart the container.
 
-- The file is seeded whenever `/config/config.yaml` is absent or empty. An
+- The file is seeded whenever the configured path is absent or empty. An
   existing config is never overwritten, so your edits survive a restart.
-- Installs created before this change keep working: a config at
-  `/config/filebrowser/config/config.yaml` is copied to the new location, and
-  the old file is kept as a backup. Remove it once the container starts
-  cleanly - while it exists, deleting `/config/config.yaml` re-imports it
-  instead of re-seeding.
-- Installing with `FILEBROWSER_DATABASE_PATH` set to a location other than
-  `/config/filebrowser/database.sqlite` needs one edit: the seeded config sets
-  `server.database.path`, which takes precedence, so point it at your existing
-  database file or delete that key. The container logs a warning when it seeds
-  a config while the variable is set, because otherwise the server starts on a
-  new empty database and your users and shares appear to be missing.
-- At startup the container removes leftover `/config/config.yaml.tmp.*`
-  temporary files older than five minutes - do not store anything under that
-  name.
-- A migrated config written for an older release may be rejected by the current
-  binary at startup. If that happens, fix or delete `/config/config.yaml` and
-  remove the legacy file to get a fresh seed.
+- At startup the container removes leftover temporary files next to the config
+  (`<config file>.tmp.*`) older than five minutes - do not store anything under
+  that name.
+- The seeded config writes logs to
+  `/config/filebrowser/logs/filebrowser.log`; the container creates that
+  directory at startup.
+- The seeded config leaves `server.database.path` commented out, so
+  `FILEBROWSER_DATABASE_PATH` (default
+  `/config/filebrowser/db/filebrowser.sqlite`) selects the database file. A path
+  set in `config.yaml` takes precedence over the variable.
 - `ADDITIONAL_PARAMETERS` appends command line flags to the server start.
+- An existing config written for an older release may be rejected by the current
+  binary at startup. If that happens, fix or delete the config file to get a
+  fresh seed.
 - Full option reference:
   [FileBrowser Quantum configuration](https://filebrowserquantum.com/en/docs/configuration/)
 
-Supply secrets as environment variables rather than in the config file.
-`FILEBROWSER_CONFIG` is ignored: the container always passes `--config` with
-`/config/config.yaml`. These environment variables are passed through to the
-server:
+### Environment variables
 
-`FILEBROWSER_ADMIN_PASSWORD`, `FILEBROWSER_JWT_TOKEN_SECRET`,
-`FILEBROWSER_TOTP_SECRET`, `FILEBROWSER_RECAPTCHA_SECRET`,
-`FILEBROWSER_LDAP_USER_PASSWORD`, `FILEBROWSER_OIDC_CLIENT_ID`,
-`FILEBROWSER_OIDC_CLIENT_SECRET`, `FILEBROWSER_ONLYOFFICE_SECRET`,
-`FILEBROWSER_FFMPEG_PATH`, `FILEBROWSER_DISABLE_AUTOMATIC_BACKUP`. Each is passed
-to the server only when it holds a non-empty value, so an empty or unset value
-leaves the matching config key in charge.
+Supply secrets as environment variables rather than in the config file. Each
+`FILEBROWSER_*` variable is passed to the server only when it holds a non-empty
+value, so an empty or unset value leaves the matching config key in charge. A
+non-empty secret variable overrides the matching key in `config.yaml`.
 
-`server.database.path` in `config.yaml` takes precedence over
-`FILEBROWSER_DATABASE_PATH` - remove that key if you prefer the variable.
+<!-- markdownlint-disable MD013 -->
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `FILEBROWSER_ADMIN_PASSWORD` | - | Password for the `admin` account. Leave unset to have a random password generated and written to the log file once, with a password change forced at first login. When set, the value is applied on every start; the literal value `admin` is treated as unset. |
+| `FILEBROWSER_JWT_TOKEN_SECRET` | - | Secret used to sign JWT authentication tokens. Changing it after first start invalidates all existing sessions. |
+| `FILEBROWSER_TOTP_SECRET` | - | Encryption secret for stored TOTP two-factor secrets. Set it before enrolling users in TOTP. |
+| `FILEBROWSER_RECAPTCHA_SECRET` | - | reCAPTCHA secret key, used by password authentication when reCAPTCHA is enabled. |
+| `FILEBROWSER_LDAP_USER_PASSWORD` | - | Password of the LDAP bind account used to look up users. |
+| `FILEBROWSER_OIDC_CLIENT_ID` | - | OIDC client id for single sign-on, for example from Authentik, Keycloak or Pocket ID. |
+| `FILEBROWSER_OIDC_CLIENT_SECRET` | - | OIDC client secret for single sign-on. |
+| `FILEBROWSER_ONLYOFFICE_SECRET` | - | JWT secret shared with your OnlyOffice document server. |
+| `FILEBROWSER_DISABLE_AUTOMATIC_BACKUP` | `false` | Set to `true` to skip the automatic database backup taken before an upgrade. |
+| `FILEBROWSER_CONFIG` | `/config/filebrowser/config/config.yaml` | Config file path. The default config is seeded here when the file is absent. |
+| `FILEBROWSER_DATABASE_PATH` | `/config/filebrowser/db/filebrowser.sqlite` | SQLite database file, used when `server.database.path` is empty (the seeded default). A path set in `config.yaml` takes precedence. |
+| `FILEBROWSER_FFMPEG_PATH` | `/usr/local/bin` | Directory holding the `ffmpeg` and `ffprobe` binaries. |
+| `ADDITIONAL_PARAMETERS` | - | Additional command line flags appended to the server start. Wildcards are passed through literally. |
+| `ENABLE_HEALTHCHECK` | `yes` | Healthchecks only run when set to `yes`; anything else, including unset, disables them. |
+| `HEALTHCHECK_COMMAND` | - | Command or script to run instead of the default `healthcheck.sh` (process, DNS and HTTPS checks). |
+| `HEALTHCHECK_ACTION` | - | Action to run when the healthcheck fails. Defaults to `exit 1`; use `kill 1` to stop the container. |
+| `HEALTHCHECK_HOSTNAME` | `google.com` | Hostname used for the HTTPS and DNS checks. `HEALTHCHECK_HOSTNAMES` accepts several targets as a space or comma separated list. |
+| `PUID` | `99` | User ID the container runs as. |
+| `PGID` | `100` | Group ID the container runs as. |
+| `UMASK` | `000` | Umask for files and directories the container creates. |
+
+<!-- markdownlint-enable MD013 -->
+
+The three path variables are optional: when unset the container uses the
+defaults shown.
 
 ## Example
 
@@ -112,6 +146,9 @@ docker run -d \
         -e PGID=100 \
         -e UMASK=000 \
         -e FILEBROWSER_ADMIN_PASSWORD=changeme \
+        -e FILEBROWSER_CONFIG=/config/filebrowser/config/config.yaml \
+        -e FILEBROWSER_DATABASE_PATH=/config/filebrowser/db/filebrowser.sqlite \
+        -e FILEBROWSER_FFMPEG_PATH=/usr/local/bin \
         ghcr.io/binhex/arch-filebrowser-quantum
 ```
 
@@ -121,9 +158,6 @@ docker run -d \
   further sources there, or change its `path` to suit your storage.
 - TLS is not generated automatically. Configure `http.tlsCert` and
   `http.tlsKey` in `config.yaml` to serve HTTPS.
-- Healthchecks are controlled by `ENABLE_HEALTHCHECK`, `HEALTHCHECK_COMMAND`,
-  `HEALTHCHECK_ACTION` and `HEALTHCHECK_HOSTNAME` (or
-  `HEALTHCHECK_HOSTNAMES`).
 
 User ID (PUID) and Group ID (PGID) can be found by issuing the following
 command for the user you want to run the container as:-

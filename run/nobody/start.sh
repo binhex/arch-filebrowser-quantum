@@ -6,16 +6,19 @@ if [[ ! -d "/config" ]]; then
 	echo "[crit] /config bind mount not found, exiting..." ; exit 1
 fi
 
-# define config and data paths
-data_root="/config/filebrowser/config"
-config_file="${data_root}/config.yaml"
+# define config path, FILEBROWSER_CONFIG is defaulted by init.sh
+config_file="${FILEBROWSER_CONFIG:-/config/filebrowser/config/config.yaml}"
+config_dir="$(dirname "${config_file}")"
+log_dir="/config/filebrowser/logs"
 seed_config_file="/opt/filebrowser/config.default.yaml"
 filebrowser_install_path="/opt/filebrowser"
 
-# create data path, used for the cache and the database
-if ! mkdir -p "${data_root}"; then
-	echo "[crit] Failed to create '${data_root}', exiting..." ; exit 1
-fi
+# create the config directory and the log directory used by the seeded config
+for container_dir in "${config_dir}" "${log_dir}"; do
+	if ! mkdir -p "${container_dir}"; then
+		echo "[crit] Failed to create '${container_dir}', exiting..." ; exit 1
+	fi
+done
 
 # remove any temporary file left behind by an interrupted earlier start
 for stale_config_file in "${config_file}".tmp.*; do

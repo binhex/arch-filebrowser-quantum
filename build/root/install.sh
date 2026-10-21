@@ -73,6 +73,7 @@ done
 install_paths=$(echo "${install_paths}" | tr ',' ' ')
 
 # set permissions for container during build - Do NOT double quote variable for install_paths otherwise this will wrap space separated paths as a single string
+# shellcheck disable=SC2086
 chmod -R 775 ${install_paths}
 
 # In install.sh heredoc, replace the chown section:
@@ -98,9 +99,18 @@ source utils.sh
 # Define environment variables to process
 # Format: "VAR_NAME:DEFAULT_VALUE:REQUIRED:MASK"
 env_vars=(
-	"FILEBROWSER_BASEURL:/:false:false"
-	"FILEBROWSER_ROOT:/media:false:false"
-	"ENABLE_TLS:no:false:false"
+	"FILEBROWSER_ADMIN_PASSWORD::false:true"
+	"FILEBROWSER_JWT_TOKEN_SECRET::false:true"
+	"FILEBROWSER_TOTP_SECRET::false:true"
+	"FILEBROWSER_RECAPTCHA_SECRET::false:true"
+	"FILEBROWSER_LDAP_USER_PASSWORD::false:true"
+	"FILEBROWSER_OIDC_CLIENT_ID::false:false"
+	"FILEBROWSER_OIDC_CLIENT_SECRET::false:true"
+	"FILEBROWSER_ONLYOFFICE_SECRET::false:true"
+	"FILEBROWSER_DISABLE_AUTOMATIC_BACKUP:false:false:false"
+	"FILEBROWSER_CONFIG:/config/filebrowser/config/config.yaml:false:true"
+	"FILEBROWSER_DATABASE_PATH:/config/filebrowser/db/filebrowser.sqlite:false:false"
+	"FILEBROWSER_FFMPEG_PATH:/usr/local/bin:false:false"
 	"ADDITIONAL_PARAMETERS::false:false"
 )
 

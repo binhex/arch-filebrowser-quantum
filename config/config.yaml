@@ -65,7 +65,7 @@ server:
   logging:
     - levels: "info"                     # levels to log, or "disabled"
       apiLevels: ""                      # levels for API routes, or "disabled"
-      output: /config/filebrowser/   # "stdout" or a file path
+      output: /config/filebrowser/logs/filebrowser.log  # "stdout" or a file path
       noColors: false                    # disable coloured output, use for files
       json: false                        # emit JSON formatted lines
       utc: false                         # log in UTC instead of local time
