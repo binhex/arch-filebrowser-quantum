@@ -62,14 +62,14 @@ server:
 
   # logging - a list, one entry per output destination
   # docs  /docs/configuration/logging/
-  # logging:
-  #   - levels: "info|warning|error"       # levels to log, or "disabled"
-  #     apiLevels: ""                      # levels for API routes, or "disabled"
-  #     output: "stdout"                   # "stdout" or a file path
-  #     noColors: false                    # disable coloured output, use for files
-  #     json: false                        # emit JSON formatted lines
-  #     utc: false                         # log in UTC instead of local time
-  #     apiFilter: ""                      # regex of API paths to omit from logs
+  logging:
+    - levels: "info"                     # levels to log, or "disabled"
+      apiLevels: ""                      # levels for API routes, or "disabled"
+      output: /config/filebrowser/   # "stdout" or a file path
+      noColors: false                    # disable coloured output, use for files
+      json: false                        # emit JSON formatted lines
+      utc: false                         # log in UTC instead of local time
+      apiFilter: ""                      # regex of API paths to omit from logs
 
   # file system sources - at least one is required
   # docs  /docs/configuration/sources/
@@ -141,14 +141,14 @@ server:
   #   startupIntegrityCheck: "quickCheck"  # quickCheck | probe | off
 
   # sqlite database holding users, shares and activity
-  database:
-    path: "/config/filebrowser/database.sqlite"
-    # migrateFrom: ""                 # one-time v1 to v2 migration source file
-    # activity:                       # semantic activity audit logging
-    #   disabled: false
-    #   retentionDays: 30             # purge activity rows older than this
-    #   flushIntervalSeconds: 10      # buffered write interval
-    #   maxBufferSize: 10000          # flush early once the buffer reaches this size
+  # database:
+  #   path: "/config/filebrowser/db/filebrowser.sqlite"
+  #   migrateFrom: ""                 # one-time v1 to v2 migration source file
+  #   activity:                       # semantic activity audit logging
+  #     disabled: false
+  #     retentionDays: 30             # purge activity rows older than this
+  #     flushIntervalSeconds: 10      # buffered write interval
+  #     maxBufferSize: 10000          # flush early once the buffer reaches this size
   # NOTE - the active path above takes precedence over FILEBROWSER_DATABASE_PATH.
   # Upgrading from an install that used that variable for a different location?
   # Point this key at the existing database file, or delete the key, otherwise

@@ -7,10 +7,9 @@ if [[ ! -d "/config" ]]; then
 fi
 
 # define config and data paths
-config_file="/config/config.yaml"
+data_root="/config/filebrowser/config"
+config_file="${data_root}/config.yaml"
 seed_config_file="/opt/filebrowser/config.default.yaml"
-legacy_config_file="/config/filebrowser/config/config.yaml"
-data_root="/config/filebrowser"
 filebrowser_install_path="/opt/filebrowser"
 
 # create data path, used for the cache and the database
@@ -41,10 +40,7 @@ if [[ -d "${config_file}" ]]; then
 fi
 
 if [[ ! -s "${config_file}" ]]; then
-	if [[ -s "${legacy_config_file}" ]]; then
-		echo "[info] Migrating existing config from '${legacy_config_file}' to '${config_file}'..."
-		source_config_file="${legacy_config_file}"
-	elif [[ -s "${seed_config_file}" ]]; then
+	if [[ -s "${seed_config_file}" ]]; then
 		echo "[info] Seeding default config to '${config_file}'..."
 		source_config_file="${seed_config_file}"
 	else
@@ -79,18 +75,6 @@ if [[ ! -s "${config_file}" ]]; then
 		echo "[crit] Failed to move '${temporary_config_file}' into place, exiting..." ; exit 1
 	fi
 
-	if [[ "${source_config_file}" == "${legacy_config_file}" ]]; then
-		echo "[info] Migration complete, the legacy file is kept as a backup - remove it once the container starts cleanly."
-	else
-		echo "[info] Default config ready - edit '${config_file}' and restart to apply changes."
-		if [[ -n "${FILEBROWSER_DATABASE_PATH}" ]]; then
-			echo "[warn] FILEBROWSER_DATABASE_PATH is set, but the default config sets server.database.path,"
-			echo "[warn] which takes precedence. Point server.database.path at your existing database file, or"
-			echo "[warn] delete that key, otherwise the server starts with a new empty database."
-		fi
-	fi
-elif [[ -f "${legacy_config_file}" ]]; then
-	echo "[info] Using '${config_file}', ignoring obsolete '${legacy_config_file}'."
 fi
 
 # export env vars, each only when non-empty: an empty value would otherwise
