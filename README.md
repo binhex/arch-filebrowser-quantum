@@ -40,6 +40,8 @@ docker run -d \
         -e FILEBROWSER_FFMPEG_PATH=/usr/local/bin \
         -e ADDITIONAL_PARAMETERS=<cli options> \
         -e ENABLE_HEALTHCHECK=<yes|no> \
+        -e ENABLE_STARTUP_SCRIPTS=<yes|no> \
+        -e STARTUP_SCRIPTS_MODE=<wait|parallel> \
         -e HEALTHCHECK_COMMAND=<command> \
         -e HEALTHCHECK_ACTION=<action> \
         -e HEALTHCHECK_HOSTNAME=<hostname> \
@@ -144,6 +146,8 @@ docker run -d \
         -v /etc/localtime:/etc/localtime:ro \
         -e PUID=99 \
         -e PGID=100 \
+        -e ENABLE_STARTUP_SCRIPTS=no \
+        -e STARTUP_SCRIPTS_MODE=wait \
         -e UMASK=000 \
         -e FILEBROWSER_ADMIN_PASSWORD=changeme \
         -e FILEBROWSER_CONFIG=/config/filebrowser/config/config.yaml \
@@ -153,6 +157,15 @@ docker run -d \
 ```
 
 ## Notes
+
+`ENABLE_STARTUP_SCRIPTS` when set to `yes` (default `no`) will allow a user to
+install additional packages from the official Arch Repository or the Arch User
+Repository (AUR) via scripts located in the folder
+`/config/filebrowser-quantum/scripts/`.
+
+`STARTUP_SCRIPTS_MODE` controls how those scripts are executed, set to `wait`
+(default) to run each script in turn and wait for it to complete before the next
+script runs, or `parallel` to run all scripts at the same time.
 
 - The `/media` mount is exposed as the `Media` source in `config.yaml`. Add
   further sources there, or change its `path` to suit your storage.

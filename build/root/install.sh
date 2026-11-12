@@ -112,6 +112,8 @@ env_vars=(
 	"FILEBROWSER_DATABASE_PATH:/config/filebrowser/db/filebrowser.sqlite:false:false"
 	"FILEBROWSER_FFMPEG_PATH:/usr/local/bin:false:false"
 	"ADDITIONAL_PARAMETERS::false:false"
+	"ENABLE_STARTUP_SCRIPTS:no:false:false"
+	"STARTUP_SCRIPTS_MODE:wait:false:false"
 )
 
 # Process each environment variable
